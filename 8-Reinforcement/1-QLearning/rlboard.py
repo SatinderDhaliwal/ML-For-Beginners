@@ -8,6 +8,34 @@ import cv2
 import random
 import math
 
+
+plt.ion()
+fig, (game, game_desc, stats) = plt.subplots(nrows=1, ncols=3, figsize=(17,6))
+
+are_we_pausing = False
+
+def on_click(event):
+    print(event)
+    global are_we_pausing
+    are_we_pausing = not are_we_pausing
+    print("We are pausing: {}".format(are_we_pausing))
+    while are_we_pausing:
+        plt.pause(1)
+
+fig.canvas.mpl_connect('button_press_event', on_click)
+
+game_desc.tick_params(axis='both', which='both', length=0)
+game_desc.set_xticklabels([])
+game_desc.set_yticklabels([])
+c_up = game_desc.text(0.5, 0.83, 0, color="green")
+c_down = game_desc.text(0.5, 0.17, 0, color="green")
+c_left = game_desc.text(0.17, 0.50, 0, color="green", rotation=40)
+c_right = game_desc.text(0.83, 0.50, 0, color="green", rotation=40)
+c_centre = game_desc.text(0.50, 0.40, 0, color="black")
+c_energy_fatigue = game_desc.text(0.05, 0.95, 0, color="black")
+
+
+
 def clip(min,max,x):
     if x<min:
         return min
@@ -165,8 +193,65 @@ class Board:
         return img
 
     def plot(self,Q=None):
-        plt.figure(figsize=(11,6))
-        plt.imshow(self.image(Q),interpolation='hanning')
+        game.imshow(self.image(Q),interpolation='hanning')
+        plt.draw()
+        plt.pause(0.10)
+
+    def refresh_plot(self, P=1):
+        if P > 0:
+            plt.draw()
+            plt.pause(P)
+
+    def plot_move(self,Q=None, C=None, D=None,I=None, P=1 ):
+        game.imshow(self.image(),interpolation='hanning')
+        if Q is not None and C is not None:
+            c_up.set_text(Q[C[0], C[1], 0])
+            c_up.set_color("orange" if D == 0 else "red")
+
+            c_down.set_text(Q[C[0], C[1], 1])
+            c_down.set_color("orange" if D == 1 else "red")
+
+            c_left.set_text(Q[C[0], C[1], 2])
+            c_left.set_color("orange" if D == 2 else "red")
+
+            c_right.set_text(Q[C[0], C[1], 3])
+            c_right.set_color("orange" if D == 3 else "red")
+
+            c_centre.set_text(I)
+
+        self.refresh_plot(P)
+
+    def plot_moved(self,Q=None, C=None, D=None, N=None, R=None, I=None, A=None, P=1 ):
+        game.imshow(self.image(),interpolation='hanning')
+        if Q is not None and C is not None:
+            c_up.set_text("{}\n{}\n{}".format(Q[C[0], C[1], 0], R, N) if D == 0 else Q[C[0], C[1], 0])
+            c_up.set_color("green" if D == 0 else "red")
+
+            c_down.set_text("{}\n{}\n{}".format(Q[C[0], C[1], 1], R, N) if D == 1 else Q[C[0], C[1], 1])
+            c_down.set_color("green" if D == 1 else "red")
+
+            c_left.set_text("{}\n{}\n{}".format(Q[C[0], C[1], 2], R, N) if D == 2 else Q[C[0], C[1], 2])
+            c_left.set_color("green" if D == 2 else "red")
+
+            c_right.set_text("{}\n{}\n{}".format(Q[C[0], C[1], 3], R, N) if D == 3 else Q[C[0], C[1], 3])
+            c_right.set_color("green" if D == 3 else "red")
+
+            c_centre.set_text("{}\nalpha={}".format(I, A))
+
+        self.refresh_plot(P)
+
+    def plot_finished(self,Q=None, I=None, S=None, P=1 ):
+        game.imshow(self.image(),interpolation='hanning')
+        c_up.set_text("")
+        c_down.set_text("")
+        c_left.set_text("")
+        c_right.set_text("")
+        c_centre.set_text("Finished {}: {}".format(I, S))
+        #plt.show()
+        self.refresh_plot(P)
+
+    def plot_energy(self, state):
+        c_energy_fatigue.set_text("Energy: {} Fatigue: {}".format(state[0], state[1]))
 
     def saveimage(self,filename,Q=None):
         cv2.imwrite(filename,255*self.image(Q)[...,::-1])
